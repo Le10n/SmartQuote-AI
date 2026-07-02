@@ -1,0 +1,7 @@
+project_id = "smartquote-ai"
+
+[functions.ai-assistant]
+verify_jwt = true
+
+[functions.send-quote-email]
+verify_jwt = true
