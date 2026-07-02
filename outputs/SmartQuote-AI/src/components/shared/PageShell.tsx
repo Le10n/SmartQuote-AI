@@ -32,7 +32,7 @@ export function PageShell({ title, description, actions, children }: PageShellPr
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur">
-            <Sparkles className="size-3.5 text-teal-600 dark:text-teal-300" />
+            <Sparkles className="size-3.5 text-accent-foreground" />
             AI-powered workspace
           </div>
           <h1 className="text-2xl font-semibold tracking-normal text-foreground sm:text-3xl">{title}</h1>

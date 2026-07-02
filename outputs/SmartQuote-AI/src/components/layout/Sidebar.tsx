@@ -44,7 +44,7 @@ export function Sidebar({ collapsed, mobileOpen, onToggle, onClose }: SidebarPro
               type="button"
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-[linear-gradient(135deg,#0f766e,#2563eb)] text-white shadow-sm transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-[image:var(--accent-gradient)] text-primary-foreground shadow-sm transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               onClick={onToggle}
             >
               <Sparkles className="size-4" />
@@ -83,7 +83,7 @@ export function Sidebar({ collapsed, mobileOpen, onToggle, onClose }: SidebarPro
                 className={({ isActive }) =>
                   cn(
                     "group relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-secondary/80 hover:text-foreground hover:shadow-sm",
-                    isActive && "bg-primary text-primary-foreground shadow-lg shadow-teal-900/10 before:absolute before:left-0 before:top-1/2 before:h-5 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-white/80 hover:bg-primary hover:text-primary-foreground",
+                    isActive && "bg-primary text-primary-foreground shadow-[0_16px_36px_var(--accent-ring)] before:absolute before:left-0 before:top-1/2 before:h-5 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-primary-foreground/80 hover:bg-primary hover:text-primary-foreground",
                     collapsed && "lg:justify-center lg:px-0"
                   )
                 }

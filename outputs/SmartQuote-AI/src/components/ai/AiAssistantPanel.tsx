@@ -131,7 +131,7 @@ export function AiAssistantPanel({ context, compact }: AiAssistantPanelProps) {
         <AnimatePresence mode="wait">
           {loading ? (
             <motion.div key="typing" className="rounded-lg border border-border/80 bg-background/58 p-4 shadow-sm backdrop-blur" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
-              <div className="mb-3 flex items-center gap-2 text-sm font-medium"><Sparkles className="size-4 text-teal-600 dark:text-teal-300" /> SmartQuote AI is thinking</div>
+              <div className="mb-3 flex items-center gap-2 text-sm font-medium"><Sparkles className="size-4 text-accent-foreground" /> SmartQuote AI is thinking</div>
               <div className="space-y-2">
                 <div className="h-3 w-11/12 rounded-full bg-secondary command-shimmer" />
                 <div className="h-3 w-9/12 rounded-full bg-secondary command-shimmer" />
@@ -141,7 +141,7 @@ export function AiAssistantPanel({ context, compact }: AiAssistantPanelProps) {
           ) : output ? (
             <motion.div key="output" className="rounded-lg border border-border/80 bg-background/70 p-4 shadow-sm backdrop-blur" initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.22 }}>
               <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm font-medium"><Sparkles className="size-4 text-teal-600 dark:text-teal-300" /> AI draft</div>
+                <div className="flex items-center gap-2 text-sm font-medium"><Sparkles className="size-4 text-accent-foreground" /> AI draft</div>
                 <Button type="button" variant="ghost" size="sm" onClick={() => void run(action, output)}><Send className="size-4" />Refine</Button>
               </div>
               <Textarea value={output} onChange={(event) => setOutput(event.target.value)} className="min-h-44 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0" />

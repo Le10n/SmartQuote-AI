@@ -24,6 +24,7 @@ import { useSortableData } from "@/hooks/use-sortable-data";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errors";
 import { productsService } from "@/services/products.service";
+import { settingsService } from "@/services/settings.service";
 import type { ArchiveFilter } from "@/types";
 import type { ProductRow } from "@/types/database";
 import { formatCurrency } from "@/utils/formatters";
@@ -59,6 +60,7 @@ export function Products() {
   useKeyboardShortcut("n", () => setModalOpen(true));
 
   const list = useAsync(() => productsService.list({ search: debouncedSearch, archive, page, pageSize }), [debouncedSearch, archive, page]);
+  const settings = useAsync(() => settingsService.get(), []);
   const products = list.data?.data ?? [];
   const count = list.data?.count ?? 0;
   const { sortedItems: sortedProducts, sort, toggleSort } = useSortableData<ProductRow, ProductSortKey>(products, productSortAccessors, { key: "product", direction: "asc" });
@@ -214,7 +216,7 @@ export function Products() {
       </Card>
 
       <Modal open={modalOpen} title={editing ? "Edit product" : "Create product"} description="Catalog data drives quote builder calculations." onClose={() => { setModalOpen(false); setEditing(null); }}>
-        <ProductForm product={editing} submitting={submitting} onSubmit={saveProduct} onCancel={() => { setModalOpen(false); setEditing(null); }} />
+        <ProductForm product={editing} submitting={submitting} defaultTax={settings.data?.default_tax ?? 20} onSubmit={saveProduct} onCancel={() => { setModalOpen(false); setEditing(null); }} />
       </Modal>
       <ConfirmDialog open={Boolean(confirmDelete)} title="Delete product" description="This permanently removes the product. You can undo immediately from the notification." destructive confirmLabel="Delete" onClose={() => setConfirmDelete(null)} onConfirm={() => confirmDelete ? void deleteProduct(confirmDelete) : undefined} />
     </PageShell>

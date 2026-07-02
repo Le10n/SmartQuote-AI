@@ -24,7 +24,7 @@ export function RevenueChart({ data }: { data: RevenuePoint[] }) {
                 <defs><linearGradient id="revenueFill" x1="0" x2="0" y1="0" y2="1"><stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.34} /><stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} /></linearGradient></defs>
                 <CartesianGrid stroke="var(--border)" strokeDasharray="4 4" vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} tickFormatter={formatCompactCurrency} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} tickFormatter={(value) => formatCompactCurrency(Number(value))} />
                 <Tooltip formatter={(value) => formatCurrency(Number(value))} cursor={{ stroke: "var(--ring)", strokeWidth: 1 }} contentStyle={{ borderRadius: 8, border: "1px solid var(--border)", background: "var(--popover)", color: "var(--popover-foreground)", boxShadow: "0 18px 40px rgba(0,0,0,0.16)" }} />
                 <Area type="monotone" dataKey="revenue" stroke="var(--chart-1)" fill="url(#revenueFill)" strokeWidth={3} isAnimationActive animationDuration={900} />
               </AreaChart>

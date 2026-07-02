@@ -22,6 +22,7 @@ import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcuts";
 import { useSelection } from "@/hooks/use-selection";
 import { useSortableData } from "@/hooks/use-sortable-data";
 import { useToast } from "@/hooks/use-toast";
+import { env } from "@/lib/env";
 import { getErrorMessage } from "@/lib/errors";
 import { clientsService } from "@/services/clients.service";
 import { emailService } from "@/services/email.service";
@@ -69,7 +70,8 @@ export function Quotes() {
       clientsService.list({ archive: "active", page: 1, pageSize: 200 }),
       productsService.list({ archive: "active", page: 1, pageSize: 200 }),
     ]);
-    return { clients: clientResult.data, products: productResult.data };
+    const settings = await settingsService.get();
+    return { clients: clientResult.data, products: productResult.data, settings };
   }, []);
 
   const quotes = list.data?.data ?? [];
@@ -234,7 +236,7 @@ export function Quotes() {
   return (
     <PageShell
       title="Quotes"
-      description="Build, approve, reject, duplicate, email, and export professional quote documents from live database data."
+      description={env.demoMode ? "Build, approve, reject, duplicate, email, and export professional quote documents from local demo data." : "Build, approve, reject, duplicate, email, and export professional quote documents from live database data."}
       actions={<Button variant="premium" size="sm" data-tour="quote-builder-action" onClick={() => { setSelectedQuote(null); setBuilderOpen(true); }}><Plus className="size-4" />Create quote</Button>}
     >
       <div className="grid gap-4 md:grid-cols-4">
@@ -298,6 +300,8 @@ export function Quotes() {
           products={references.data?.products ?? []}
           quote={selectedQuote}
           submitting={submitting}
+          defaultTax={references.data?.settings.default_tax ?? 0}
+          pdfAccentColor={references.data?.settings.brand_primary}
           onSave={saveQuote}
           onApprove={(id) => updateStatus(id, "accepted")}
           onReject={(id) => updateStatus(id, "rejected")}

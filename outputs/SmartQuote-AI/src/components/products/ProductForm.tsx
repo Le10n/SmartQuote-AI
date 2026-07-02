@@ -25,11 +25,12 @@ export type ProductFormValues = z.infer<typeof productSchema>;
 interface ProductFormProps {
   product?: ProductRow | null;
   submitting?: boolean;
+  defaultTax?: number;
   onSubmit: (values: ProductFormValues) => void | Promise<void>;
   onCancel: () => void;
 }
 
-export function ProductForm({ product, submitting, onSubmit, onCancel }: ProductFormProps) {
+export function ProductForm({ product, submitting, defaultTax = 20, onSubmit, onCancel }: ProductFormProps) {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -39,7 +40,7 @@ export function ProductForm({ product, submitting, onSubmit, onCancel }: Product
       category: "",
       purchase_price: 0,
       selling_price: 0,
-      tax: 20,
+      tax: defaultTax,
       stock: 0,
       unit: "pcs",
     },
@@ -53,11 +54,11 @@ export function ProductForm({ product, submitting, onSubmit, onCancel }: Product
       category: product?.category ?? "",
       purchase_price: product?.purchase_price ?? 0,
       selling_price: product?.selling_price ?? 0,
-      tax: product?.tax ?? 20,
+      tax: product?.tax ?? defaultTax,
       stock: product?.stock ?? 0,
       unit: product?.unit ?? "pcs",
     });
-  }, [form, product]);
+  }, [defaultTax, form, product]);
 
   return (
     <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>

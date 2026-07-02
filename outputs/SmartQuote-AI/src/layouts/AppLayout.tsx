@@ -40,7 +40,7 @@ export function AppLayout() {
     <div
       className={cn(
         "relative min-h-screen overflow-x-hidden bg-background text-foreground",
-        !preferences.animations && "motion-reduced"
+        !preferences.animations && "smartquote-reduced-motion"
       )}
       data-motion={preferences.animations ? "on" : "off"}
       style={layoutStyle}

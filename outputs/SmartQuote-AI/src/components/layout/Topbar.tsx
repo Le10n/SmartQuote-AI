@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, Command, LogOut, Menu, Moon, Plus, Search, Sparkles, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AiAssistantPanel } from "@/components/ai/AiAssistantPanel";
 import { Modal } from "@/components/shared/Modal";
@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useTheme } from "@/hooks/use-theme";
 import { useToast } from "@/hooks/use-toast";
+import { useWorkspacePreferences } from "@/hooks/use-workspace-preferences";
 import { getErrorMessage } from "@/lib/errors";
 import { searchService } from "@/services/search.service";
 import type { GlobalSearchResult } from "@/types";
@@ -24,6 +25,7 @@ const topbarIconButton = "size-9 rounded-lg border-border/80 bg-background/70 sh
 export function Topbar({ onMenuClick }: TopbarProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
+  const { preferences } = useWorkspacePreferences();
   const location = useLocation();
   const toast = useToast();
   const [search, setSearch] = useState("");
@@ -31,6 +33,10 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   const [open, setOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const debounced = useDebouncedValue(search, 220);
+  const profileInitials = useMemo(() => {
+    const source = preferences.profileName.trim() || user?.email || "SmartQuote";
+    return source.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  }, [preferences.profileName, user?.email]);
 
   useEffect(() => {
     let mounted = true;
@@ -122,7 +128,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
 
           <div className="ml-auto flex items-center gap-2">
             <div className="hidden items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur xl:flex dark:bg-background/35">
-              <Sparkles className="size-3.5 text-teal-600 dark:text-teal-300" />
+              <Sparkles className="size-3.5 text-accent-foreground" />
               AI workspace active
             </div>
             <Button title="Create quote" variant="premium" size="sm" className="hidden sm:inline-flex" asChild>
@@ -132,7 +138,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
               </Link>
             </Button>
             <Button title="AI Assistant" aria-label="AI Assistant" variant="outline" size="icon" className={topbarIconButton} onClick={() => setAssistantOpen(true)} data-tour="ai-assistant-trigger" data-cursor="AI">
-              <Bot className="size-4 text-teal-700 dark:text-teal-200" />
+              <Bot className="size-4 text-accent-foreground" />
             </Button>
             <Button title={theme === "dark" ? "Use light mode" : "Use dark mode"} aria-label={theme === "dark" ? "Use light mode" : "Use dark mode"} variant="outline" size="icon" className={topbarIconButton} onClick={toggleTheme}>
               {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
@@ -140,9 +146,21 @@ export function Topbar({ onMenuClick }: TopbarProps) {
             <Button title="Sign out" aria-label="Sign out" variant="outline" size="icon" className={topbarIconButton} onClick={() => void handleSignOut()}>
               <LogOut className="size-4" />
             </Button>
-            <Avatar className="hidden sm:flex">
-              <AvatarFallback>{user?.email?.slice(0, 2).toUpperCase() ?? "SQ"}</AvatarFallback>
-            </Avatar>
+            <Button title="Open profile settings" aria-label="Open profile settings" variant="outline" size="icon" className={topbarIconButton + " hidden rounded-full p-0 sm:inline-flex"} asChild data-cursor="Open">
+              <Link
+                to="/settings?section=profile"
+                onKeyDown={(event) => {
+                  if (event.key === " ") {
+                    event.preventDefault();
+                    event.currentTarget.click();
+                  }
+                }}
+              >
+                <Avatar className="size-8">
+                  <AvatarFallback>{profileInitials}</AvatarFallback>
+                </Avatar>
+              </Link>
+            </Button>
           </div>
         </div>
       </header>

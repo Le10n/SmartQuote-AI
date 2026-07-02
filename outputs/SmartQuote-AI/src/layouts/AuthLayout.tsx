@@ -51,8 +51,8 @@ export function AuthLayout({ title, description, children, busy, success }: Auth
       <section className="relative z-10 grid min-h-screen lg:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.92fr)]">
         <div className="relative hidden overflow-hidden border-r border-border/70 px-10 py-10 lg:flex lg:flex-col lg:justify-between xl:px-14">
           <div className="absolute inset-0 auth-grid opacity-70" />
-          <motion.div className="absolute -left-24 top-20 size-80 rounded-full bg-teal-400/20 blur-3xl" animate={{ x: [0, 38, 0], y: [0, -22, 0] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }} />
-          <motion.div className="absolute bottom-4 right-4 size-96 rounded-full bg-blue-500/20 blur-3xl" animate={{ x: [0, -30, 0], y: [0, 28, 0] }} transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }} />
+          <motion.div className="absolute -left-24 top-20 size-80 rounded-full bg-[var(--accent-soft)] blur-3xl" animate={{ x: [0, 38, 0], y: [0, -22, 0] }} transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }} />
+          <motion.div className="absolute bottom-4 right-4 size-96 rounded-full bg-[color-mix(in_oklab,var(--brand-accent)_14%,transparent)] blur-3xl" animate={{ x: [0, -30, 0], y: [0, 28, 0] }} transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }} />
           {particles.map((particle) => (
             <motion.span
               key={particle.id}

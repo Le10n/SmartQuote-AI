@@ -19,6 +19,7 @@ interface TourStep {
   route?: string;
   selector?: string;
   fallbackSelector?: string;
+  placement?: "right" | "auto";
   icon: LucideIcon;
   actionLabel?: string;
 }
@@ -47,6 +48,7 @@ const tourSteps: TourStep[] = [
     title: "Sidebar navigation",
     description: "Switch between Dashboard, Clients, Quotes, Products, Analytics and Settings.",
     selector: "[data-tour='sidebar']",
+    placement: "right",
     icon: Compass,
   },
   {
@@ -146,20 +148,41 @@ function rectFromElement(element: HTMLElement): TourRect {
   };
 }
 
-function tooltipFromRect(rect: TourRect | null): TooltipPosition {
-  const width = Math.min(window.innerWidth - 32, window.innerWidth >= 768 ? 560 : 430);
+function tooltipFromRect(rect: TourRect | null, placement: TourStep["placement"] = "auto"): TooltipPosition {
+  const viewportPadding = 16;
+  const gap = 18;
+  const estimatedHeight = 320;
+  const width = Math.min(window.innerWidth - viewportPadding * 2, window.innerWidth >= 768 ? 560 : 430);
   if (!rect) {
     return {
       width,
-      left: Math.max(16, (window.innerWidth - width) / 2),
+      left: Math.max(viewportPadding, (window.innerWidth - width) / 2),
       top: Math.max(92, window.innerHeight * 0.22),
     };
   }
 
-  const below = rect.top + rect.height + 18;
-  const above = rect.top - 326;
-  const top = below + 320 < window.innerHeight ? below : Math.max(16, above);
-  const left = clamp(rect.left + rect.width / 2 - width / 2, 16, window.innerWidth - width - 16);
+  const maxTop = Math.max(viewportPadding, window.innerHeight - estimatedHeight - viewportPadding);
+  const preferredTop = clamp(rect.top + Math.min(28, rect.height * 0.18), viewportPadding, maxTop);
+
+  if (placement === "right" && window.innerWidth >= 640) {
+    const rightEdge = rect.left + rect.width;
+    const rightSpace = window.innerWidth - rightEdge - gap - viewportPadding;
+    if (rightSpace >= 320) {
+      const placedWidth = Math.min(width, rightSpace);
+      return { width: placedWidth, left: rightEdge + gap, top: preferredTop };
+    }
+
+    const leftSpace = rect.left - gap - viewportPadding;
+    if (leftSpace >= 320) {
+      const placedWidth = Math.min(width, leftSpace);
+      return { width: placedWidth, left: rect.left - gap - placedWidth, top: preferredTop };
+    }
+  }
+
+  const below = rect.top + rect.height + gap;
+  const above = rect.top - estimatedHeight - gap;
+  const top = below + estimatedHeight < window.innerHeight - viewportPadding ? below : Math.max(viewportPadding, above);
+  const left = clamp(rect.left + rect.width / 2 - width / 2, viewportPadding, window.innerWidth - width - viewportPadding);
   return { width, left, top };
 }
 
@@ -246,13 +269,13 @@ export function ProductTour() {
       const element = getTargetElement(step);
       if (!element) {
         setSpotlight(null);
-        setTooltip(tooltipFromRect(null));
+        setTooltip(tooltipFromRect(null, step.placement));
         return;
       }
 
       const nextRect = rectFromElement(element);
       setSpotlight(nextRect);
-      setTooltip(tooltipFromRect(nextRect));
+      setTooltip(tooltipFromRect(nextRect, step.placement));
     }
 
     function scheduleMeasure() {
@@ -333,7 +356,7 @@ export function ProductTour() {
 
           {spotlight ? (
             <motion.div
-              className="pointer-events-none absolute left-0 top-0 rounded-xl border border-teal-300/70 bg-transparent ring-1 ring-white/20 will-change-transform"
+              className="pointer-events-none absolute left-0 top-0 rounded-xl border border-ring/70 bg-transparent ring-1 ring-white/20 will-change-transform"
               style={spotlightStyle}
               initial={false}
               animate={{ x: spotlight.left, y: spotlight.top, opacity: 1 }}
@@ -341,7 +364,7 @@ export function ProductTour() {
             />
           ) : null}
 
-          {finishedPulse ? <motion.div className="absolute left-1/2 top-1/2 size-28 -translate-x-1/2 -translate-y-1/2 rounded-full border border-teal-300/60 bg-teal-400/10" initial={{ scale: 0.45, opacity: 0 }} animate={{ scale: 2.8, opacity: 0 }} transition={{ duration: 0.42, ease: "easeOut" }} /> : null}
+          {finishedPulse ? <motion.div className="absolute left-1/2 top-1/2 size-28 -translate-x-1/2 -translate-y-1/2 rounded-full border border-ring/60 bg-[var(--accent-soft)]" initial={{ scale: 0.45, opacity: 0 }} animate={{ scale: 2.8, opacity: 0 }} transition={{ duration: 0.42, ease: "easeOut" }} /> : null}
 
           <AnimatePresence mode="wait">
             <motion.div
@@ -359,7 +382,7 @@ export function ProductTour() {
               <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--ring),transparent)] opacity-70" />
               <div className="flex items-start justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="ai-orbit-glow flex size-10 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#0f766e,#2563eb)] text-white shadow-sm"><Icon className="size-4" /></div>
+                  <div className="ai-orbit-glow flex size-10 shrink-0 items-center justify-center rounded-lg bg-[image:var(--accent-gradient)] text-primary-foreground shadow-sm"><Icon className="size-4" /></div>
                   <div className="min-w-0">
                     <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Step {stepIndex + 1} of {tourSteps.length}</p>
                     <h2 className="mt-1 text-base font-semibold tracking-normal">{step.title}</h2>

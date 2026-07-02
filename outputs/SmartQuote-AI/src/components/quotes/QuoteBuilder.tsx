@@ -11,10 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { env } from "@/lib/env";
 import { cn } from "@/lib/utils";
 import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcuts";
+import { useWorkspacePreferences } from "@/hooks/use-workspace-preferences";
 import type { ClientRow, ProductRow } from "@/types/database";
 import type { QuoteBuilderItem, QuoteBuilderValue, QuoteWithDetails } from "@/types";
 import { calculateLineTotal, calculateQuoteTotals } from "@/utils/calculations";
-import { formatCurrency } from "@/utils/formatters";
+import { formatCurrency, getCurrencySymbol } from "@/utils/formatters";
 
 interface QuoteBuilderProps {
   clients: ClientRow[];
@@ -25,6 +26,8 @@ interface QuoteBuilderProps {
   onApprove?: (id: string) => void | Promise<void>;
   onReject?: (id: string) => void | Promise<void>;
   onDuplicate?: (id: string) => void | Promise<void>;
+  defaultTax?: number;
+  pdfAccentColor?: string;
 }
 
 function toInitialItems(quote?: QuoteWithDetails | null): QuoteBuilderItem[] {
@@ -40,22 +43,29 @@ function toInitialItems(quote?: QuoteWithDetails | null): QuoteBuilderItem[] {
   })) ?? [];
 }
 
-function createItem(product: ProductRow): QuoteBuilderItem {
+function createItem(product: ProductRow, defaultTax: number, defaultDiscount: number): QuoteBuilderItem {
+  const discount = Number.isFinite(defaultDiscount) ? defaultDiscount : 0;
+  const tax = Number.isFinite(product.tax) ? product.tax : defaultTax;
   return {
     id: crypto.randomUUID(),
     product_id: product.id,
     name: product.name,
     quantity: 1,
     price: product.selling_price,
-    discount: 0,
-    tax: product.tax,
-    total: calculateLineTotal({ quantity: 1, price: product.selling_price, discount: 0, tax: product.tax }),
+    discount,
+    tax,
+    total: calculateLineTotal({ quantity: 1, price: product.selling_price, discount, tax }),
   };
 }
 
-export function QuoteBuilder({ clients, products, quote, submitting, onSave, onApprove, onReject, onDuplicate }: QuoteBuilderProps) {
+function normalizeHexColor(value: string | undefined, fallback = "#0f766e") {
+  return value && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+}
+
+export function QuoteBuilder({ clients, products, quote, submitting, onSave, onApprove, onReject, onDuplicate, defaultTax = 0, pdfAccentColor }: QuoteBuilderProps) {
+  const { preferences } = useWorkspacePreferences();
   const [clientId, setClientId] = useState(quote?.client_id ?? clients[0]?.id ?? "");
-  const [notes, setNotes] = useState(quote?.notes ?? "");
+  const [notes, setNotes] = useState(quote?.notes ?? preferences.defaultNotes);
   const [items, setItems] = useState<QuoteBuilderItem[]>(() => toInitialItems(quote));
   const [removedItem, setRemovedItem] = useState<QuoteBuilderItem | null>(null);
   const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
@@ -68,6 +78,9 @@ export function QuoteBuilder({ clients, products, quote, submitting, onSave, onA
     return products.filter((product) => (product.name + " " + product.sku + " " + (product.category ?? "")).toLowerCase().includes(term));
   }, [productSearch, products]);
   const selectedClient = clients.find((client) => client.id === clientId) ?? null;
+  const currencySymbol = getCurrencySymbol(preferences.currency);
+  const pdfAccent = normalizeHexColor(pdfAccentColor, normalizeHexColor(preferences.pdfAccentColor));
+  const pdfAccentGradient = "linear-gradient(90deg, " + pdfAccent + ", color-mix(in oklab, " + pdfAccent + " 68%, #2563eb))";
 
   useKeyboardShortcut("mod+s", () => {
     if (!clientId || !items.length || submitting) return;
@@ -76,11 +89,11 @@ export function QuoteBuilder({ clients, products, quote, submitting, onSave, onA
 
   useEffect(() => {
     setClientId(quote?.client_id ?? clients[0]?.id ?? "");
-    setNotes(quote?.notes ?? "");
+    setNotes(quote?.notes ?? preferences.defaultNotes);
     setItems(toInitialItems(quote));
     setRemovedItem(null);
     setDraggingItemId(null);
-  }, [clients, quote]);
+  }, [clients, preferences.defaultNotes, quote]);
 
   useEffect(() => {
     if (!env.demoMode || typeof window === "undefined") return undefined;
@@ -98,7 +111,7 @@ export function QuoteBuilder({ clients, products, quote, submitting, onSave, onA
   function addProduct(productId = filteredProducts[0]?.id ?? products[0]?.id) {
     const product = products.find((item) => item.id === productId);
     if (!product) return;
-    setItems((current) => [...current, createItem(product)]);
+    setItems((current) => [...current, createItem(product, defaultTax, preferences.defaultDiscount)]);
   }
 
   function updateItem(id: string, patch: Partial<QuoteBuilderItem>) {
@@ -163,7 +176,7 @@ export function QuoteBuilder({ clients, products, quote, submitting, onSave, onA
               animate={{ opacity: 1, y: 0 }}
               className={cn(
                 "rounded-full border border-border bg-secondary/40 px-2.5 py-1 text-xs text-muted-foreground",
-                autosaveLabel === "Saving..." && "border-teal-500/25 bg-teal-500/10 text-teal-700 dark:text-teal-200"
+                autosaveLabel === "Saving..." && "border-ring/25 bg-[var(--accent-soft)] text-accent-foreground"
               )}
             >
               {autosaveLabel}
@@ -216,7 +229,7 @@ export function QuoteBuilder({ clients, products, quote, submitting, onSave, onA
                     <div className="grid min-w-0 flex-1 gap-2"><Label>Product</Label><Select value={item.product_id} onChange={(event) => changeProduct(item.id, event.target.value)}>{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</Select></div>
                   </div>
                   <div className="grid min-w-0 gap-2"><Label>Qty</Label><Input className="quote-number-input text-right tabular-nums" inputMode="decimal" type="number" min="0.01" step="0.01" value={item.quantity} onChange={(event) => updateItem(item.id, { quantity: Number(event.target.value) })} /></div>
-                  <div className="grid min-w-0 gap-2"><Label>Price</Label><div className="relative"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span><Input className="quote-number-input pl-7 text-right tabular-nums" inputMode="decimal" type="number" min="0" step="0.01" value={item.price} onChange={(event) => updateItem(item.id, { price: Number(event.target.value) })} /></div></div>
+                  <div className="grid min-w-0 gap-2"><Label>Price</Label><div className="relative"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{currencySymbol}</span><Input className="quote-number-input pl-7 text-right tabular-nums" inputMode="decimal" type="number" min="0" step="0.01" value={item.price} onChange={(event) => updateItem(item.id, { price: Number(event.target.value) })} /></div></div>
                   <div className="grid min-w-0 gap-2"><Label>Discount</Label><div className="relative"><Input className="quote-number-input pr-7 text-right tabular-nums" inputMode="decimal" type="number" min="0" max="100" step="0.01" value={item.discount} onChange={(event) => updateItem(item.id, { discount: Number(event.target.value) })} /><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span></div></div>
                   <div className="grid min-w-0 gap-2"><Label>Tax</Label><div className="relative"><Input className="quote-number-input pr-7 text-right tabular-nums" inputMode="decimal" type="number" min="0" max="100" step="0.01" value={item.tax} onChange={(event) => updateItem(item.id, { tax: Number(event.target.value) })} /><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span></div></div>
                   <div className="grid min-w-0 gap-2 md:col-span-2 min-[1900px]:col-span-1"><Label>Total</Label><motion.p key={item.total} initial={{ opacity: 0.6, y: 3 }} animate={{ opacity: 1, y: 0 }} className="h-10 truncate rounded-lg border border-border bg-background px-3 py-2 text-right text-sm font-medium tabular-nums">{formatCurrency(item.total)}</motion.p></div>
@@ -267,7 +280,7 @@ export function QuoteBuilder({ clients, products, quote, submitting, onSave, onA
 
       <div className="space-y-4 2xl:sticky 2xl:top-24 2xl:self-start">
         <div className="relative overflow-hidden rounded-lg border border-border bg-card p-5 shadow-xl shadow-black/[0.04]">
-          <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--chart-1),var(--chart-2))]" />
+          <div className="absolute inset-x-0 top-0 h-1" style={{ background: pdfAccentGradient }} />
           <div className="flex items-start justify-between gap-3">
             <div><p className="text-sm text-muted-foreground">Live document preview</p><h3 className="mt-1 text-lg font-semibold">{quote?.quote_number ?? "New quote"}</h3></div>
             <StatusBadge status={quote?.status ?? "draft"} />
@@ -289,8 +302,8 @@ export function QuoteBuilder({ clients, products, quote, submitting, onSave, onA
             <div className="flex justify-between gap-4"><span className="text-muted-foreground">Tax</span><motion.span key={totals.tax} initial={{ opacity: 0.6, y: 2 }} animate={{ opacity: 1, y: 0 }} className="font-medium">{formatCurrency(totals.tax)}</motion.span></div>
             <div className="border-t border-border pt-3 text-base font-semibold"><div className="flex justify-between gap-4"><span>Total</span><motion.span key={totals.total} initial={{ opacity: 0.45, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>{formatCurrency(totals.total)}</motion.span></div></div>
           </div>
-          <div className="mt-4 rounded-lg border border-teal-500/20 bg-teal-500/10 p-3 text-xs leading-5 text-teal-900 dark:text-teal-100">
-            AI hint: keep discounts explicit and pair the final total with a crisp approval-ready summary.
+          <div className="mt-4 rounded-lg border border-ring/20 bg-[var(--accent-soft)] p-3 text-xs leading-5 text-accent-foreground">
+            AI hint: keep discounts explicit and pair the {preferences.currency} total with a {preferences.aiStyle.toLowerCase()} summary.
           </div>
         </div>
         <AiAssistantPanel context={{ client: selectedClient, totals, items, notes }} />

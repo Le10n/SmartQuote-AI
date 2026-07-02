@@ -22,6 +22,7 @@ import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcuts";
 import { useSelection } from "@/hooks/use-selection";
 import { useSortableData } from "@/hooks/use-sortable-data";
 import { useToast } from "@/hooks/use-toast";
+import { env } from "@/lib/env";
 import { getErrorMessage } from "@/lib/errors";
 import { clientsService } from "@/services/clients.service";
 import type { ArchiveFilter } from "@/types";
@@ -226,7 +227,7 @@ export function Clients() {
         <Pagination page={page} pageSize={pageSize} count={count} onPageChange={setPage} />
       </Card>
 
-      <Modal open={modalOpen} title={editing ? "Edit client" : "Create client"} description="Client records are stored securely in Supabase." onClose={() => { setModalOpen(false); setEditing(null); }}>
+      <Modal open={modalOpen} title={editing ? "Edit client" : "Create client"} description={env.demoMode ? "Demo client records are saved locally in this browser." : "Client records are stored securely in Supabase."} onClose={() => { setModalOpen(false); setEditing(null); }}>
         <ClientForm client={editing} submitting={submitting} onSubmit={saveClient} onCancel={() => { setModalOpen(false); setEditing(null); }} />
       </Modal>
       <ConfirmDialog open={Boolean(confirmDelete)} title="Delete client" description="This permanently removes the client. You can undo immediately from the notification." destructive confirmLabel="Delete" onClose={() => setConfirmDelete(null)} onConfirm={() => confirmDelete ? void deleteClient(confirmDelete) : undefined} />

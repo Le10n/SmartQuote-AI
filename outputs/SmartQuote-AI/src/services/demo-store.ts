@@ -1,6 +1,8 @@
 import type { AiAction, DashboardSummary, GlobalSearchResult, ListQuery, PaginatedResult, QuoteBuilderItem, QuoteBuilderValue, QuoteTotals, QuoteWithClient, QuoteWithDetails } from "@/types";
 import type { ActivityEventRow, ClientInsert, ClientRow, ClientUpdate, CompanySettingsRow, CompanySettingsUpdate, ProductInsert, ProductRow, ProductUpdate, QuoteItemRow, QuoteStatus } from "@/types/database";
 import { calculateLineTotal, calculateQuoteTotals } from "@/utils/calculations";
+import { formatCurrency } from "@/utils/formatters";
+import { readWorkspacePreferences } from "@/services/workspace-preferences.service";
 
 const DEMO_STORE_KEY = "smartquote-demo-store-v2";
 const DEMO_OWNER_ID = "00000000-0000-4000-8000-000000000001";
@@ -406,7 +408,15 @@ function nextQuoteNumber(state: DemoState) {
     const parsed = Number(quote.quote_number.split("-").pop());
     return Number.isFinite(parsed) ? Math.max(current, parsed) : current;
   }, 1000);
-  return "SQ-2026-" + String(max + 1).padStart(4, "0");
+  const next = max + 1;
+  const year = String(new Date().getFullYear());
+  const format = readWorkspacePreferences().quoteNumberFormat || "SQ-{YYYY}-{0000}";
+  return format
+    .replaceAll("{YYYY}", year)
+    .replaceAll("{YY}", year.slice(-2))
+    .replaceAll("{0000}", String(next).padStart(4, "0"))
+    .replaceAll("{000}", String(next).padStart(3, "0"))
+    .replaceAll("{N}", String(next));
 }
 
 function toQuoteBuilderItem(state: DemoState, item: QuoteItemRow): QuoteBuilderItem {
@@ -804,7 +814,7 @@ export const demoStore = {
       .map((quote) => withClient(state, quote))
       .filter((quote) => matchesSearch([quote.quote_number, quote.notes, quote.client?.company], value))
       .slice(0, 5)
-      .map((quote) => ({ id: quote.id, type: "quote" as const, title: quote.quote_number, subtitle: quote.status + " - $" + Math.round(quote.total).toLocaleString("en-US"), href: "/quotes" }));
+      .map((quote) => ({ id: quote.id, type: "quote" as const, title: quote.quote_number, subtitle: quote.status + " - " + formatCurrency(quote.total), href: "/quotes" }));
     return [...clients, ...products, ...quotes];
   },
   ai: {
@@ -820,7 +830,10 @@ export const demoStore = {
         suggest_products: "Product suggestions",
         marketing_text: "Marketing copy",
       };
-      const contextHint = context ? "\n\nContext considered: live quote/client/product data from the demo workspace." : "";
+      const preferences = readWorkspacePreferences();
+      const settings = readState().settings;
+      const styleHint = "\n\nDemo AI settings applied: " + settings.ai_tone + ", " + preferences.aiStyle + ", " + preferences.aiLanguage + ".";
+      const contextHint = (context ? "\n\nContext considered: live quote/client/product data from the demo workspace." : "") + styleHint;
 
       if (action === "follow_up_email") {
         return "Subject: Next steps for your SmartQuote AI proposal\n\nHi there,\n\nThank you for reviewing the proposal. Based on your priorities, I recommend moving forward with the scope as outlined and scheduling a short alignment call to confirm timing, owners, and approval details.\n\nThe quote is structured to keep implementation focused, measurable, and easy for your team to approve.\n\nBest,\nSmartQuote AI" + contextHint;
@@ -831,7 +844,7 @@ export const demoStore = {
       }
 
       if (action === "pricing_suggestion") {
-        return "Recommended pricing approach:\n\n1. Keep the core implementation price intact to protect margin.\n2. Offer a modest 5-8% bundle discount only when AI pricing and branded PDF setup are purchased together.\n3. Position training as the adoption accelerator, not an optional add-on.\n\nSuggested rationale: the package reduces manual quoting effort, improves approval polish, and creates repeatable revenue operations." + contextHint;
+        return "Recommended pricing approach:\n\n1. Keep the core implementation price intact to protect margin.\n2. Offer a modest 5-8% bundle discount only when AI pricing and branded PDF setup are purchased together.\n3. Position training as the adoption accelerator, not an optional add-on.\n\nSuggested rationale: the package reduces manual quoting effort, improves approval polish, and creates repeatable revenue operations. Current workspace currency is " + preferences.currency + "." + contextHint;
       }
 
       if (action === "suggest_products") {

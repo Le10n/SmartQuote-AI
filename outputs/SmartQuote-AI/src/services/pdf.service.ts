@@ -2,6 +2,7 @@ import { env } from "@/lib/env";
 import type { CompanySettingsRow, QuoteWithDetails } from "@/types";
 import { storageService } from "@/services/storage.service";
 import { formatCurrency, formatDate } from "@/utils/formatters";
+import { readWorkspacePreferences } from "@/services/workspace-preferences.service";
 
 export interface PdfResult {
   fileName: string;
@@ -21,9 +22,10 @@ export const pdfService = {
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 44;
     const contentWidth = pageWidth - margin * 2;
-    const primary = settings.brand_primary || "#0f766e";
-    const secondary = settings.brand_secondary || "#2563eb";
     const logoUrl = storageService.getPublicUrl("company-assets", settings.logo_path);
+    const preferences = readWorkspacePreferences();
+    const primary = settings.brand_primary || preferences.pdfAccentColor || "#0f766e";
+    const secondary = settings.brand_secondary || "#2563eb";
 
     function addFooter(pageNumber: number) {
       doc.setDrawColor("#e5e7eb");
@@ -31,7 +33,7 @@ export const pdfService = {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor("#6b7280");
-      doc.text(settings.company_name + " · " + (settings.email_signature || "SmartQuote AI"), margin, pageHeight - 28, { maxWidth: contentWidth - 80 });
+      doc.text(settings.company_name + " - " + (preferences.pdfFooter || settings.email_signature || "SmartQuote AI"), margin, pageHeight - 28, { maxWidth: contentWidth - 80 });
       doc.text("Page " + pageNumber, pageWidth - margin - 34, pageHeight - 28);
     }
 
@@ -88,7 +90,7 @@ export const pdfService = {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor("#6b7280");
-    doc.text("Clear scope, pricing, tax, and terms for approval.", margin, y + 18);
+    doc.text("Clear scope, pricing, tax, and terms for approval. Valid for " + preferences.quoteValidityDays + " days.", margin, y + 18);
 
     const cardTop = y + 42;
     const cardWidth = (contentWidth - 16) / 2;
@@ -223,7 +225,7 @@ export const pdfService = {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor("#4b5563");
-    const terms = doc.splitTextToSize(settings.pdf_terms, contentWidth);
+    const terms = doc.splitTextToSize(preferences.defaultPaymentTerms + "\n\n" + settings.pdf_terms, contentWidth);
     doc.text(terms, margin, y + 18, { lineHeightFactor: 1.35 });
 
     const totalPages = doc.getNumberOfPages();
@@ -247,3 +249,4 @@ export const pdfService = {
     link.click();
   },
 };
+

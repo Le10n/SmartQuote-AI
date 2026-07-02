@@ -4,7 +4,11 @@ export interface WorkspacePreferences {
   website: string;
   companyPhone: string;
   companyEmail: string;
+  accentColor: string;
+  pdfAccentColor: string;
   currency: string;
+  defaultDiscount: number;
+  quoteValidityDays: number;
   quoteNumberFormat: string;
   defaultPaymentTerms: string;
   defaultNotes: string;
@@ -30,7 +34,11 @@ export const defaultWorkspacePreferences: WorkspacePreferences = {
   website: "https://smartquote-ai.demo",
   companyPhone: "+1 415 555 0198",
   companyEmail: "hello@smartquote-ai.demo",
+  accentColor: "#0f766e",
+  pdfAccentColor: "#0f766e",
   currency: "USD",
+  defaultDiscount: 0,
+  quoteValidityDays: 30,
   quoteNumberFormat: "SQ-{YYYY}-{0000}",
   defaultPaymentTerms: "Payment due within 14 days",
   defaultNotes: "Thank you for the opportunity. This proposal is optimized for fast approval and measurable ROI.",
@@ -53,6 +61,8 @@ type StringPreferenceKey =
   | "website"
   | "companyPhone"
   | "companyEmail"
+  | "accentColor"
+  | "pdfAccentColor"
   | "currency"
   | "quoteNumberFormat"
   | "defaultPaymentTerms"
@@ -61,7 +71,8 @@ type StringPreferenceKey =
   | "aiLanguage"
   | "aiStyle";
 
-type BooleanPreferenceKey = Exclude<keyof WorkspacePreferences, StringPreferenceKey>;
+type NumberPreferenceKey = "defaultDiscount" | "quoteValidityDays";
+type BooleanPreferenceKey = Exclude<keyof WorkspacePreferences, StringPreferenceKey | NumberPreferenceKey>;
 
 const stringPreferenceKeys: StringPreferenceKey[] = [
   "profileName",
@@ -69,6 +80,8 @@ const stringPreferenceKeys: StringPreferenceKey[] = [
   "website",
   "companyPhone",
   "companyEmail",
+  "accentColor",
+  "pdfAccentColor",
   "currency",
   "quoteNumberFormat",
   "defaultPaymentTerms",
@@ -88,6 +101,8 @@ const booleanPreferenceKeys: BooleanPreferenceKey[] = [
   "animations",
   "customCursor",
 ];
+
+const numberPreferenceKeys: NumberPreferenceKey[] = ["defaultDiscount", "quoteValidityDays"];
 
 let cachedSerializedPreferences: string | null = null;
 let cachedPreferences: WorkspacePreferences = defaultWorkspacePreferences;
@@ -110,6 +125,13 @@ export function normalizeWorkspacePreferences(value: unknown): WorkspacePreferen
   for (const key of booleanPreferenceKeys) {
     const preference = value[key];
     if (typeof preference === "boolean") {
+      next[key] = preference;
+    }
+  }
+
+  for (const key of numberPreferenceKeys) {
+    const preference = value[key];
+    if (typeof preference === "number" && Number.isFinite(preference)) {
       next[key] = preference;
     }
   }
